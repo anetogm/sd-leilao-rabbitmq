@@ -6,5 +6,5 @@ with open("chaves/private.pem", "wb") as f:
     f.write(private_key)
 
 public_key = key.publickey().export_key()
-with open("chaves/public.pem", "wb") as f:
+with open("chaves_publicas/public.pem", "wb") as f:
     f.write(public_key)
