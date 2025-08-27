@@ -1,0 +1,37 @@
+import pika
+
+"""
+                                TODO
+Escuta os eventos das filas lance_validado e leilao_vencedor.
+
+                                TODO
+Publica esses eventos nas filas específicas para cada leilão,
+de acordo com o seu ID (leilao_1, leilao_2, ...), de modo que
+somente os consumidores interessados nesses leilões recebam as
+notificações correspondentes.
+
+"""
+
+connection = pika.BlockingConnection(pika.ConnectionParameters('localhost'))
+channel = connection.channel()
+
+channel.queue_declare(queue='lance_validado')
+channel.queue_declare(queue='leilao_vencedor')
+
+def callback_lance_validado(ch, method, properties, body):
+    print("Recebido em lance_validado:", body)
+    # Publica na fila específica do leilão
+    leilao_id = body['leilao_id']
+    channel.basic_publish(exchange='', routing_key=f'leilao_{leilao_id}', body=body)
+
+def callback_leilao_vencedor(ch, method, properties, body):
+    print("Recebido em leilao_vencedor:", body)
+    # Publica na fila específica do leilão
+    leilao_id = body['leilao_id']
+    channel.basic_publish(exchange='', routing_key=f'leilao_{leilao_id}', body=body)
+
+channel.basic_consume(queue='lance_validado', on_message_callback=callback_lance_validado, auto_ack=True)
+channel.basic_consume(queue='leilao_vencedor', on_message_callback=callback_leilao_vencedor, auto_ack=True)
+
+print(' [*] Esperando mensagens. Para sair pressione CTRL+C')
+channel.start_consuming()
