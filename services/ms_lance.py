@@ -1,4 +1,9 @@
 import pika
+import json
+import base64
+from Crypto.Signature import pkcs1_15
+from Crypto.Hash import SHA256
+from Crypto.PublicKey import RSA
 
 """
 						TODO
@@ -39,6 +44,33 @@ def callback_leilao_iniciado(ch, method, properties, body):
 
 def callback_leilao_finalizado(ch, method, properties, body):
 	print("Recebido em leilao_finalizado:", body)
+ 
+def publica_lance(mensagem_cliente):
+	mensagem = channel.basic_consume(queue='lance_realizado', on_message_callback=callback_lance_realizado, auto_ack=True)
+	valor_decoded = base64.b64decode(mensagem)
+	valor_decoded = json.loads(valor_decoded)
+	lance_atual = valor_decoded['valor']
+	
+	msg_cliente_decoded = base64.b64decode(mensagem_cliente)
+	msg_cliente_decoded = json.loads(msg_cliente_decoded)
+	lance = msg_cliente_decoded['valor']
+	id_cliente = msg_cliente_decoded['id_cliente']
+ 
+	key = RSA.import_key(open(f'chaves_publicas/public_key_{id_cliente}.pem').read())
+	h = SHA256.new(msg_cliente_decoded)
+	try:
+		pkcs1_15.new(key).verify(h, id_cliente)
+		print("A assinatura é válida.")
+  
+		if lance > lance_atual:
+			channel.basic_publish(exchange='', routing_key='lance_validado', body=mensagem_cliente)
+			print("Lance válido e registrado.")
+		else:
+			print("Lance inválido.")
+   
+	except (ValueError, TypeError):
+		print("A assinatura não é válida.")
+		return
 
 connection = pika.BlockingConnection(pika.ConnectionParameters('localhost'))
 channel = connection.channel()

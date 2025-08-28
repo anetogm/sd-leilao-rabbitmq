@@ -28,14 +28,14 @@ leiloes = [
 		'descricao': 'Notebook',
 		'inicio': '?',
 		'fim': '?',
-		'status': 'pendente'
+		'status': 'ativo'
 	},
 	{
 		'id': 2,
 		'descricao': 'Celular',
 		'inicio': '?',
 		'fim': '?',
-		'status': 'pendente'
+		'status': 'ativo'
 	}
 ]
 
