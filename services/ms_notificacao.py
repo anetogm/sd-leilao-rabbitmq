@@ -1,4 +1,5 @@
 import pika
+import json
 
 """
                                 TODO
@@ -20,15 +21,15 @@ channel.queue_declare(queue='leilao_vencedor')
 
 def callback_lance_validado(ch, method, properties, body):
     print("Recebido em lance_validado:", body)
-    # Publica na fila específica do leilão
-    leilao_id = body['leilao_id']
-    channel.basic_publish(exchange='', routing_key=f'leilao_{leilao_id}', body=body)
+    msg = json.loads(body.decode())
+    leilao_id = msg['leilao_id']
+    channel.basic_publish(exchange='', routing_key=f'leilao_{leilao_id}', body=json.dumps(msg))
 
 def callback_leilao_vencedor(ch, method, properties, body):
     print("Recebido em leilao_vencedor:", body)
-    # Publica na fila específica do leilão
-    leilao_id = body['leilao_id']
-    channel.basic_publish(exchange='', routing_key=f'leilao_{leilao_id}', body=body)
+    msg = json.loads(body.decode())
+    leilao_id = msg['leilao_id']
+    channel.basic_publish(exchange='', routing_key=f'leilao_{leilao_id}', body=json.dumps(msg))
 
 channel.basic_consume(queue='lance_validado', on_message_callback=callback_lance_validado, auto_ack=True)
 channel.basic_consume(queue='leilao_vencedor', on_message_callback=callback_leilao_vencedor, auto_ack=True)

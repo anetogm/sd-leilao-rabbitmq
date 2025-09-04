@@ -5,72 +5,56 @@ from Crypto.Signature import pkcs1_15
 from Crypto.Hash import SHA256
 from Crypto.PublicKey import RSA
 
-"""
-						TODO
-Possui as chaves públicas de todos os clientes.
-
-						TODO
-Escuta os eventos das filas lance_realizado, leilao_iniciado
-e leilao_finalizado.
-
-						TODO
-Recebe lances de usuários (ID do leilão; ID do usuário, valor
-do lance) e checa a assinatura digital da mensagem utilizando a
-chave pública correspondente. Somente aceitará o lance se:
-	- A assinatura for válida;
-	- O ID do leilão existir e se o leilão estiver ativo;
-	- O lance for maior que o último lance registrado;
- 
-						TODO
-Se o lance for válido, o MS Lance publica o evento na fila
-lance_validado.
-
-						TODO
-Ao finalizar um leilão, publicar na fila leilao_vencedor,
-informando o ID do leilão, o ID do vencedor do leilão e o valor
-negociado. O vencedor é o que efetuou o maior lance válido até o
-encerramento.
-
-"""
-
-# como que eu sei qual o valor que ta maior no leilao?
-# como que eu faço a verificacao pra ver se o valor que o cliente ta tentando é maior que o atual?
+leiloes_ativos = {}
+lances_atuais = {}
 
 def callback_lance_realizado(ch, method, properties, body):
-	print("Recebido em lance_realizado:", body)
+    print("Recebido em lance_realizado:", body)
+    try:
+        msg = json.loads(body.decode())
+        leilao_id = msg['leilao_id']
+        id_cliente = msg['id_cliente']
+        valor = msg['valor']
+        assinatura = base64.b64decode(msg['assinatura'])
+        
+        if leilao_id not in leiloes_ativos:
+            print("Leilão não ativo.")
+            return
+        
+        key = RSA.import_key(open(f'chaves_publicas/public_key_{id_cliente}.pem').read())
+        msg_para_assinar = json.dumps({'leilao_id': leilao_id, 'id_cliente': id_cliente, 'valor': valor}).encode()
+        h = SHA256.new(msg_para_assinar)
+        try:
+            pkcs1_15.new(key).verify(h, assinatura)
+            print("Assinatura válida.")
+            
+            if leilao_id not in lances_atuais or valor > lances_atuais[leilao_id]['valor']:
+                lances_atuais[leilao_id] = {'id_cliente': id_cliente, 'valor': valor}
+                channel.basic_publish(exchange='', routing_key='lance_validado', body=json.dumps(msg))
+                print("Lance válido e registrado.")
+            else:
+                print("Lance não é maior que o atual.")
+        except (ValueError, TypeError):
+            print("Assinatura inválida.")
+    except Exception as e:
+        print(f"Erro ao processar lance: {e}")
 
 def callback_leilao_iniciado(ch, method, properties, body):
-	print("Recebido em leilao_iniciado:", body)
+    print("Recebido em leilao_iniciado:", body)
+    leilao_id = int(body.decode().split(';')[0])
+    leiloes_ativos[leilao_id] = True
 
 def callback_leilao_finalizado(ch, method, properties, body):
-	print("Recebido em leilao_finalizado:", body)
- 
-def publica_lance(mensagem_cliente):
-	mensagem = channel.basic_consume(queue='lance_realizado', on_message_callback=callback_lance_realizado, auto_ack=True)
-	valor_decoded = base64.b64decode(mensagem)
-	valor_decoded = json.loads(valor_decoded)
-	lance_atual = valor_decoded['valor']
-	
-	msg_cliente_decoded = base64.b64decode(mensagem_cliente)
-	msg_cliente_decoded = json.loads(msg_cliente_decoded)
-	lance = msg_cliente_decoded['valor']
-	id_cliente = msg_cliente_decoded['id_cliente']
- 
-	key = RSA.import_key(open(f'chaves_publicas/public_key_{id_cliente}.pem').read())
-	h = SHA256.new(msg_cliente_decoded)
-	try:
-		pkcs1_15.new(key).verify(h, id_cliente)
-		print("A assinatura é válida.")
-  
-		if lance > lance_atual:
-			channel.basic_publish(exchange='', routing_key='lance_validado', body=mensagem_cliente)
-			print("Lance válido e registrado.")
-		else:
-			print("Lance inválido.")
-   
-	except (ValueError, TypeError):
-		print("A assinatura não é válida.")
-		return
+    print("Recebido em leilao_finalizado:", body)
+    leilao_id = int(body.decode().split(';')[0])
+    if leilao_id in leiloes_ativos:
+        del leiloes_ativos[leilao_id]
+    if leilao_id in lances_atuais:
+        vencedor = lances_atuais[leilao_id]
+        msg_vencedor = json.dumps({'leilao_id': leilao_id, 'id_vencedor': vencedor['id_cliente'], 'valor': vencedor['valor']})
+        channel.basic_publish(exchange='', routing_key='leilao_vencedor', body=msg_vencedor)
+        print(f"Vencedor publicado: {msg_vencedor}")
+        del lances_atuais[leilao_id]
 
 connection = pika.BlockingConnection(pika.ConnectionParameters('localhost'))
 channel = connection.channel()

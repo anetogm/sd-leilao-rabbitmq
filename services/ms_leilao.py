@@ -22,19 +22,22 @@ termina, ele publica o evento na fila: leilao_finalizado.
 
 """
 
+inicio = datetime.now() + timedelta(seconds=10)
+fim = inicio + timedelta(minutes=10)
+
 leiloes = [
 	{
 		'id': 1,
 		'descricao': 'Notebook',
-		'inicio': '?',
-		'fim': '?',
+		'inicio': inicio,
+		'fim': fim,
 		'status': 'ativo'
 	},
 	{
 		'id': 2,
 		'descricao': 'Celular',
-		'inicio': '?',
-		'fim': '?',
+		'inicio': inicio,
+        'fim': fim,
 		'status': 'ativo'
 	}
 ]
@@ -44,9 +47,12 @@ channel = connection.channel()
 channel.queue_declare(queue='leilao_iniciado')
 channel.queue_declare(queue='leilao_finalizado')
 
+lock = threading.Lock()
+
 def publicar_evento(fila, mensagem):
-	channel.basic_publish(exchange='', routing_key=fila, body=mensagem)
-	print(f"[x] Evento publicado em {fila}: {mensagem}")
+    with lock:
+        channel.basic_publish(exchange='', routing_key=fila, body=mensagem)
+        print(f"[x] Evento publicado em {fila}: {mensagem}")
 
 def gerenciar_leilao(leilao):
 	tempo_ate_inicio = (leilao['inicio'] - datetime.now()).total_seconds()
