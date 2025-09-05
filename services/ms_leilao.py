@@ -4,25 +4,7 @@ import time
 from datetime import datetime, timedelta
 import threading
 
-"""
-							TODO 
-Mantém internamente uma lista pré-configurada (hardcoded)
-de leilões com: ID do leilão, descrição, data e hora de início e fim,
-status (ativo, encerrado).
-
-							TODO 
-O leilão de um determinado produto deve ser iniciado quando
-o tempo definido para esse leilão for atingido. Quando um leilão
-começa, ele publica o evento na fila: leilao_iniciado.
-
-							TODO 
-O leilão de um determinado produto deve ser finalizado
-quando o tempo definido para esse leilão expirar. Quando um leilão
-termina, ele publica o evento na fila: leilao_finalizado.
-
-"""
-
-inicio = datetime.now() + timedelta(seconds=10)
+inicio = datetime.now() + timedelta(seconds=2)
 fim = inicio + timedelta(minutes=10)
 
 leiloes = [

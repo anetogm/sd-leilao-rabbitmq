@@ -1,18 +1,6 @@
 import pika
 import json
 
-"""
-                                TODO
-Escuta os eventos das filas lance_validado e leilao_vencedor.
-
-                                TODO
-Publica esses eventos nas filas específicas para cada leilão,
-de acordo com o seu ID (leilao_1, leilao_2, ...), de modo que
-somente os consumidores interessados nesses leilões recebam as
-notificações correspondentes.
-
-"""
-
 connection = pika.BlockingConnection(pika.ConnectionParameters('localhost'))
 channel = connection.channel()
 
