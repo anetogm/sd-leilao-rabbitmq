@@ -1,6 +1,0 @@
-trabalhar com dois clientes (nao precisa mais)
-
-salvar as chaves rsa em um diretorio (um pra cada cliente)
-
-chave tamanho minimo de 2048
-
