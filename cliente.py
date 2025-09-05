@@ -51,10 +51,16 @@ class Cliente:
         print(f"Lance enviado: {msg}")
 
 # GUI
-cliente = Cliente("Cliente1", 1)
+# Gerar id_cliente automaticamente baseado em chaves existentes
+os.makedirs("chaves_publicas", exist_ok=True)
+chaves_existentes = [f for f in os.listdir("chaves_publicas") if f.startswith("public_key_")]
+id_cliente = len(chaves_existentes) + 1
+nome_cliente = f"Cliente{id_cliente}"
+
+cliente = Cliente(nome_cliente, id_cliente)
 
 root = tk.Tk()
-root.title("Cliente de Leilão")
+root.title(f"Cliente de Leilão - {nome_cliente}")
 
 tk.Label(root, text="ID do Leilão:").grid(row=0, column=0)
 leilao_entry = tk.Entry(root)
