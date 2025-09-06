@@ -42,6 +42,8 @@ class Cliente:
         self.id_cliente = id_cliente
         self.private_key_path = f"chaves/private_{id_cliente}.pem"
         self.public_key_path = f"chaves_publicas/public_key_{id_cliente}.pem"
+        self.connection = pika.BlockingConnection(pika.ConnectionParameters(host="localhost"))
+        self.channel = self.connection.channel()
         
         # Gerar chaves se não existirem
         if not os.path.exists(self.private_key_path):
@@ -62,7 +64,7 @@ class Cliente:
         h = SHA256.new(msg_str.encode())
         assinatura = pkcs1_15.new(self.private_key).sign(h)
         msg['assinatura'] = base64.b64encode(assinatura).decode()
-        channel.basic_publish(exchange='', routing_key='lance_realizado', body=json.dumps(msg))
+        self.channel.basic_publish(exchange='', routing_key='lance_realizado', body=json.dumps(msg))
         print(f"Lance enviado: {msg}")
 
 # GUI

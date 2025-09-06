@@ -21,7 +21,7 @@ def callback_lance_realizado(ch, method, properties, body):
             print("Leilão não ativo.")
             return
         
-        key = RSA.import_key(open(f'chaves_publicas/public_key_{id_cliente}.pem').read())
+        key = RSA.import_key(open(f'../chaves_publicas/public_key_{id_cliente}.pem').read())
         msg_para_assinar = json.dumps({'leilao_id': leilao_id, 'id_cliente': id_cliente, 'valor': valor}).encode()
         h = SHA256.new(msg_para_assinar)
         try:
