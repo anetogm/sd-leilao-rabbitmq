@@ -26,8 +26,19 @@ leiloes = [
 
 connection = pika.BlockingConnection(pika.ConnectionParameters('localhost'))
 channel = connection.channel()
-channel.queue_declare(queue='leilao_iniciado')
+
+
+channel.exchange_declare(exchange='inicio', exchange_type='fanout')
+result = channel.queue_declare(queue='', exclusive=True)
+queue_name = result.method.queue
+channel.queue_bind(exchange='inicio', queue=queue_name)
+
 channel.queue_declare(queue='leilao_finalizado')
+channel.queue_declare(queue='lance_realizado')
+channel.queue_declare(queue='leilao_1')
+channel.queue_declare(queue='leilao_2')
+channel.queue_declare(queue='lance_validado')
+channel.queue_declare(queue='leilao_vencedor')
 
 lock = threading.Lock()
 
@@ -36,12 +47,17 @@ def publicar_evento(fila, mensagem):
         channel.basic_publish(exchange='', routing_key=fila, body=mensagem)
         print(f"[x] Evento publicado em {fila}: {mensagem}")
 
+def publicar_fanout(ex,message):
+	with lock:
+		channel.basic_publish(exchange=ex, routing_key='', body=message)
+		print(f"[x] Evento publicado em fanout: {message}")
+
 def gerenciar_leilao(leilao):
 	tempo_ate_inicio = (leilao['inicio'] - datetime.now()).total_seconds()
 	if tempo_ate_inicio > 0:
 		time.sleep(tempo_ate_inicio)
 	leilao['status'] = 'ativo'
-	publicar_evento('leilao_iniciado', f"{leilao['id']};{leilao['descricao']};{leilao['inicio']}")
+	publicar_fanout('inicio', f"{leilao['id']};{leilao['descricao']};{leilao['inicio']}")
 
 	tempo_ate_fim = (leilao['fim'] - datetime.now()).total_seconds()
 	if tempo_ate_fim > 0:

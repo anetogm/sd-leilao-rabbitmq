@@ -7,19 +7,34 @@ from Crypto.Hash import SHA256
 from Crypto.PublicKey import RSA
 import tkinter as tk
 from tkinter import messagebox
+import argparse
+
+
+parser = argparse.ArgumentParser(description="Script de cliente")
+
+parser.add_argument("--client", help='Choose de client ID ("A" OR "B")')
+args = parser.parse_args()
 
 connection = pika.BlockingConnection(pika.ConnectionParameters('localhost'))
 channel = connection.channel()
 
-channel.queue_declare(queue='lance_realizado')
-channel.queue_declare(queue='leilao_1')
-channel.queue_declare(queue='leilao_2')
 
 def callback(ch, method, properties, body):
     print("Notificação recebida:", body.decode())
+    messagebox.showinfo("Mensagem recebida:", f"{body.decode()}")
+
+channel.exchange_declare(exchange='inicio', exchange_type='fanout')
+result = channel.queue_declare(queue='', exclusive=True)
+queue_name = result.method.queue
+channel.queue_bind(exchange='inicio', queue=queue_name)
 
 channel.basic_consume(queue='leilao_1', on_message_callback=callback, auto_ack=True)
-channel.basic_consume(queue='leilao_2', on_message_callback=callback, auto_ack=True)
+channel.basic_consume(queue=queue_name, on_message_callback=callback, auto_ack=True)
+
+if args.client == "B":
+    print("Sou o cliente B")
+    channel.basic_consume(queue='leilao_2', on_message_callback=callback, auto_ack=True)
+
 
 class Cliente:
     def __init__(self, nome, id_cliente):
@@ -79,7 +94,7 @@ def enviar():
     except Exception as e:
         messagebox.showerror("Erro", str(e))
 
-tk.Button(root, text="Enviar Lance", command=enviar).grid(row=2, column=0, columnspan=2)
+tk.Button(root, text="Enviar Lance", command=enviar).grid(row=3, column=0, columnspan=2)
 
 # Iniciar consumo em thread separada
 import threading

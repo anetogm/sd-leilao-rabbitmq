@@ -4,9 +4,6 @@ import json
 connection = pika.BlockingConnection(pika.ConnectionParameters('localhost'))
 channel = connection.channel()
 
-channel.queue_declare(queue='lance_validado')
-channel.queue_declare(queue='leilao_vencedor')
-
 def callback_lance_validado(ch, method, properties, body):
     print("Recebido em lance_validado:", body)
     msg = json.loads(body.decode())

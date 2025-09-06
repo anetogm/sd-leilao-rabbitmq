@@ -59,12 +59,15 @@ def callback_leilao_finalizado(ch, method, properties, body):
 connection = pika.BlockingConnection(pika.ConnectionParameters('localhost'))
 channel = connection.channel()
 
-channel.queue_declare(queue='lance_realizado')
-channel.queue_declare(queue='leilao_iniciado')
-channel.queue_declare(queue='leilao_finalizado')
+#definição da fanout
+channel.exchange_declare(exchange='inicio', exchange_type='fanout')
+result = channel.queue_declare(queue='', exclusive=True)
+queue_name = result.method.queue
+channel.queue_bind(exchange='inicio', queue=queue_name)
+
 
 channel.basic_consume(queue='lance_realizado', on_message_callback=callback_lance_realizado, auto_ack=True)
-channel.basic_consume(queue='leilao_iniciado', on_message_callback=callback_leilao_iniciado, auto_ack=True)
+channel.basic_consume(queue=queue_name, on_message_callback=callback_leilao_iniciado, auto_ack=True)
 channel.basic_consume(queue='leilao_finalizado', on_message_callback=callback_leilao_finalizado, auto_ack=True)
 
 print(' [*] Esperando mensagens. Para sair pressione CTRL+C')
