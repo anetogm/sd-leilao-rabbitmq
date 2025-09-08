@@ -18,10 +18,25 @@ args = parser.parse_args()
 connection = pika.BlockingConnection(pika.ConnectionParameters('localhost'))
 channel = connection.channel()
 
+# Lista de leilões ativos
+leiloes_ativos = []
+
 
 def callback(ch, method, properties, body):
-    print("Notificação recebida:", body.decode())
-    root.after(0, lambda: messagebox.showinfo("Mensagem recebida:", f"{body.decode()}"))
+    mensagem = body.decode()
+    print("Notificação recebida:", mensagem)
+    
+    # Verificar se é uma mensagem de início de leilão
+    if ';' in mensagem:
+        partes = mensagem.split(';')
+        if len(partes) == 3:
+            leilao_id, descricao, inicio = partes
+            leilao = {'id': leilao_id, 'descricao': descricao, 'inicio': inicio}
+            if leilao not in leiloes_ativos:
+                leiloes_ativos.append(leilao)
+                root.after(0, atualizar_lista_leiloes)
+    
+    root.after(0, lambda: messagebox.showinfo("Mensagem recebida:", mensagem))
 
 channel.exchange_declare(exchange='inicio', exchange_type='fanout')
 result = channel.queue_declare(queue='', exclusive=True)
@@ -80,14 +95,28 @@ cliente = Cliente(nome_cliente, id_cliente)
 
 root = tk.Tk()
 root.title(f"Cliente de Leilão - {nome_cliente}")
+root.geometry("500x400")
 
-tk.Label(root, text="ID do Leilão:").grid(row=0, column=0)
-leilao_entry = tk.Entry(root)
-leilao_entry.grid(row=0, column=1)
+# Configurar pesos para centralizar
+root.columnconfigure(0, weight=1)
+root.columnconfigure(1, weight=1)
 
-tk.Label(root, text="Valor do Lance:").grid(row=1, column=0)
-valor_entry = tk.Entry(root)
-valor_entry.grid(row=1, column=1)
+tk.Label(root, text="ID do Leilão:", font=("Arial", 12)).grid(row=0, column=0, padx=10, pady=5, sticky='w')
+leilao_entry = tk.Entry(root, font=("Arial", 12))
+leilao_entry.grid(row=0, column=1, padx=10, pady=5, sticky='ew')
+
+tk.Label(root, text="Valor do Lance:", font=("Arial", 12)).grid(row=1, column=0, padx=10, pady=5, sticky='w')
+valor_entry = tk.Entry(root, font=("Arial", 12))
+valor_entry.grid(row=1, column=1, padx=10, pady=5, sticky='ew')
+
+tk.Label(root, text="Feed:", font=("Arial", 12)).grid(row=2, column=0, columnspan=2, padx=10, pady=5, sticky='ew')
+leiloes_listbox = tk.Listbox(root, height=10, font=("Arial", 12))
+leiloes_listbox.grid(row=3, column=0, columnspan=2, padx=10, pady=5, sticky='ew')
+
+def atualizar_lista_leiloes():
+    leiloes_listbox.delete(0, tk.END)
+    for leilao in leiloes_ativos:
+        leiloes_listbox.insert(tk.END, f"ID: {leilao['id']} - {leilao['descricao']} (Início: {leilao['inicio']})")
 
 def enviar():
     try:
@@ -98,7 +127,7 @@ def enviar():
     except Exception as e:
         messagebox.showerror("Erro", str(e))
 
-tk.Button(root, text="Enviar Lance", command=enviar).grid(row=3, column=0, columnspan=2)
+tk.Button(root, text="Enviar Lance", command=enviar, font=("Arial", 12)).grid(row=4, column=0, columnspan=2, padx=10, pady=10, sticky='ew')
 
 # Iniciar consumo em thread separada
 import threading
