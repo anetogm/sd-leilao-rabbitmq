@@ -26,7 +26,7 @@ def callback(ch, method, properties, body):
     mensagem = body.decode()
     print("Notificação recebida:", mensagem)
     
-    # Verificar se é uma mensagem de início de leilão
+    # Verificar se é uma mensagem de início de leilão (contém ';')
     if ';' in mensagem:
         partes = mensagem.split(';')
         if len(partes) == 3:
@@ -35,6 +35,9 @@ def callback(ch, method, properties, body):
             if leilao not in leiloes_ativos:
                 leiloes_ativos.append(leilao)
                 root.after(0, atualizar_lista_leiloes)
+    else:
+        # É uma mensagem de lance ou vencedor
+        root.after(0, lambda: adicionar_notificacao(mensagem))
     
     root.after(0, lambda: messagebox.showinfo("Mensagem recebida:", mensagem))
 
@@ -117,6 +120,9 @@ def atualizar_lista_leiloes():
     leiloes_listbox.delete(0, tk.END)
     for leilao in leiloes_ativos:
         leiloes_listbox.insert(tk.END, f"ID: {leilao['id']} - {leilao['descricao']} (Início: {leilao['inicio']})")
+
+def adicionar_notificacao(mensagem):
+    leiloes_listbox.insert(tk.END, f"Notificação: {mensagem}")
 
 def enviar():
     try:
