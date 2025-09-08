@@ -40,8 +40,9 @@ class Cliente:
     def __init__(self, nome, id_cliente):
         self.nome = nome
         self.id_cliente = id_cliente
-        self.private_key_path = f"chaves/private_{id_cliente}.pem"
-        self.public_key_path = f"chaves_publicas/public_key_{id_cliente}.pem"
+        base_dir = os.path.dirname(os.path.abspath(__file__))
+        self.private_key_path = os.path.join(base_dir, 'chaves', f'private_{id_cliente}.pem')
+        self.public_key_path = os.path.join(base_dir, 'chaves_publicas', f'public_key_{id_cliente}.pem')
         self.connection = pika.BlockingConnection(pika.ConnectionParameters(host="localhost"))
         self.channel = self.connection.channel()
         
@@ -52,7 +53,7 @@ class Cliente:
             with open(self.private_key_path, "wb") as f:
                 f.write(private_key)
             public_key = key.publickey().export_key()
-            os.makedirs("chaves_publicas", exist_ok=True)
+            os.makedirs(os.path.dirname(self.public_key_path), exist_ok=True)
             with open(self.public_key_path, "wb") as f:
                 f.write(public_key)
         
@@ -69,8 +70,9 @@ class Cliente:
 
 # GUI
 # Gerar id_cliente automaticamente baseado em chaves existentes
-os.makedirs("chaves_publicas", exist_ok=True)
-chaves_existentes = [f for f in os.listdir("chaves_publicas") if f.startswith("public_key_")]
+base_dir = os.path.dirname(os.path.abspath(__file__))
+os.makedirs(os.path.join(base_dir, "chaves_publicas"), exist_ok=True)
+chaves_existentes = [f for f in os.listdir(os.path.join(base_dir, "chaves_publicas")) if f.startswith("public_key_")]
 id_cliente = len(chaves_existentes) + 1
 nome_cliente = f"Cliente{id_cliente}"
 

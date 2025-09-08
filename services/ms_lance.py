@@ -4,6 +4,7 @@ import base64
 from Crypto.Signature import pkcs1_15
 from Crypto.Hash import SHA256
 from Crypto.PublicKey import RSA
+import os
 
 leiloes_ativos = {}
 lances_atuais = {}
@@ -21,7 +22,9 @@ def callback_lance_realizado(ch, method, properties, body):
             print("Leilão não ativo.")
             return
         
-        key = RSA.import_key(open(f'../chaves_publicas/public_key_{id_cliente}.pem').read())
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        key_path = os.path.join(script_dir, '..', 'chaves_publicas', f'public_key_{id_cliente}.pem')
+        key = RSA.import_key(open(key_path).read())
         msg_para_assinar = json.dumps({'leilao_id': leilao_id, 'id_cliente': id_cliente, 'valor': valor}).encode()
         h = SHA256.new(msg_para_assinar)
         try:
