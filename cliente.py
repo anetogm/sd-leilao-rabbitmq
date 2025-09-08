@@ -25,17 +25,21 @@ def callback(ch, method, properties, body):
     print("Notificação recebida:", body.decode())
     root.after(0, lambda: messagebox.showinfo("Mensagem recebida:", f"{body.decode()}"))
 
+
 channel.exchange_declare(exchange='inicio', exchange_type='fanout')
-result = channel.queue_declare(queue='', exclusive=True)
-queue_name = result.method.queue
-channel.queue_bind(exchange='inicio', queue=queue_name)
+
+channel.queue_declare(queue='notificacoes1', durable=True)
+channel.queue_declare(queue='notificacoes2', durable=True)
+channel.queue_bind(exchange='inicio', queue='notificacoes1')
+channel.queue_bind(exchange='inicio', queue='notificacoes2')
 
 channel.basic_consume(queue='leilao_1', on_message_callback=callback, auto_ack=True)
-channel.basic_consume(queue=queue_name, on_message_callback=callback, auto_ack=True)
+channel.basic_consume(queue='notificacoes1', on_message_callback=callback, auto_ack=True)
 
-if args.client == "B":
-    print("Sou o cliente B")
+if args.client == "A":
+    print("Sou o cliente A")
     channel.basic_consume(queue='leilao_2', on_message_callback=callback, auto_ack=True)
+    channel.basic_consume(queue='notificacoes2', on_message_callback=callback, auto_ack=True)
 
 
 class Cliente:

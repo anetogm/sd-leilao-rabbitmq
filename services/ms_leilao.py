@@ -29,9 +29,6 @@ channel = connection.channel()
 
 
 channel.exchange_declare(exchange='inicio', exchange_type='fanout')
-result = channel.queue_declare(queue='', exclusive=True)
-queue_name = result.method.queue
-channel.queue_bind(exchange='inicio', queue=queue_name)
 
 channel.queue_declare(queue='leilao_finalizado')
 channel.queue_declare(queue='lance_realizado')

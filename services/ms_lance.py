@@ -1,13 +1,14 @@
-import pika
-import json
 import base64
 from Crypto.Signature import pkcs1_15
 from Crypto.Hash import SHA256
 from Crypto.PublicKey import RSA
+import json
 import os
+import pika
 
 leiloes_ativos = {}
 lances_atuais = {}
+
 
 def callback_lance_realizado(ch, method, properties, body):
     print("Recebido em lance_realizado:", body)
@@ -64,14 +65,14 @@ channel = connection.channel()
 
 #definição da fanout
 channel.exchange_declare(exchange='inicio', exchange_type='fanout')
-result = channel.queue_declare(queue='', exclusive=True)
-queue_name = result.method.queue
-channel.queue_bind(exchange='inicio', queue=queue_name)
+
+channel.queue_declare(queue='notificacoes3', durable=True)
+channel.queue_bind(exchange='inicio', queue='notificacoes3')
 
 
 channel.basic_consume(queue='lance_realizado', on_message_callback=callback_lance_realizado, auto_ack=True)
-channel.basic_consume(queue=queue_name, on_message_callback=callback_leilao_iniciado, auto_ack=True)
 channel.basic_consume(queue='leilao_finalizado', on_message_callback=callback_leilao_finalizado, auto_ack=True)
+channel.basic_consume(queue='notificacoes3', on_message_callback=callback_leilao_iniciado, auto_ack=True)
 
 print(' [*] Esperando mensagens. Para sair pressione CTRL+C')
 channel.start_consuming()
