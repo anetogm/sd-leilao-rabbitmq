@@ -21,7 +21,7 @@ channel = connection.channel()
 
 def callback(ch, method, properties, body):
     print("Notificação recebida:", body.decode())
-    messagebox.showinfo("Mensagem recebida:", f"{body.decode()}")
+    root.after(0, lambda: messagebox.showinfo("Mensagem recebida:", f"{body.decode()}"))
 
 channel.exchange_declare(exchange='inicio', exchange_type='fanout')
 result = channel.queue_declare(queue='', exclusive=True)
