@@ -1,13 +1,15 @@
-import pika
-import json
+import argparse
 import base64
-import os
 from Crypto.Signature import pkcs1_15
 from Crypto.Hash import SHA256
 from Crypto.PublicKey import RSA
+import json
+import os
+import pika
+import threading
 import tkinter as tk
 from tkinter import messagebox
-import argparse
+
 
 
 parser = argparse.ArgumentParser(description="Script de cliente")
@@ -101,7 +103,7 @@ def enviar():
 tk.Button(root, text="Enviar Lance", command=enviar).grid(row=3, column=0, columnspan=2)
 
 # Iniciar consumo em thread separada
-import threading
+
 def consumir():
     channel.start_consuming()
 
