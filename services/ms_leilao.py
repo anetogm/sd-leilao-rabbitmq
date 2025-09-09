@@ -30,13 +30,6 @@ channel = connection.channel()
 
 channel.exchange_declare(exchange='inicio', exchange_type='fanout')
 
-channel.queue_declare(queue='leilao_finalizado')
-channel.queue_declare(queue='lance_realizado')
-channel.queue_declare(queue='leilao_1')
-channel.queue_declare(queue='leilao_2')
-channel.queue_declare(queue='lance_validado')
-channel.queue_declare(queue='leilao_vencedor')
-
 lock = threading.Lock()
 
 def publicar_evento(fila, mensagem):

@@ -7,8 +7,11 @@ import json
 import os
 import pika
 import threading
+import time
 import tkinter as tk
 from tkinter import messagebox
+
+print("Certifique-se de executar os serviços na ordem: ms_leilao.py, ms_lance.py, ms_notificacao.py antes de executar o cliente.py")
 
 
 
@@ -22,6 +25,7 @@ channel = connection.channel()
 
 # Lista de leilões ativos
 leiloes_ativos = []
+leiloes_ids = set()  # Para evitar duplicatas
 
 
 def callback(ch, method, properties, body):
@@ -33,31 +37,28 @@ def callback(ch, method, properties, body):
         partes = mensagem.split(';')
         if len(partes) == 3:
             leilao_id, descricao, inicio = partes
-            leilao = {'id': leilao_id, 'descricao': descricao, 'inicio': inicio}
-            if leilao not in leiloes_ativos:
+            if leilao_id not in leiloes_ids:
+                leilao = {'id': leilao_id, 'descricao': descricao, 'inicio': inicio}
                 leiloes_ativos.append(leilao)
+                leiloes_ids.add(leilao_id)
                 root.after(0, atualizar_lista_leiloes)
+                print(f"Leilão ativo adicionado: {leilao}")
     else:
         # É uma mensagem de lance ou vencedor
         root.after(0, lambda: adicionar_notificacao(mensagem))
+        print(f"Notificação adicionada: {mensagem}")
     
     root.after(0, lambda: messagebox.showinfo("Mensagem recebida:", mensagem))
 
 
 channel.exchange_declare(exchange='inicio', exchange_type='fanout')
 
-channel.queue_declare(queue='notificacoes1', durable=True)
-channel.queue_declare(queue='notificacoes2', durable=True)
-channel.queue_bind(exchange='inicio', queue='notificacoes1')
-channel.queue_bind(exchange='inicio', queue='notificacoes2')
-
 channel.basic_consume(queue='leilao_1', on_message_callback=callback, auto_ack=True)
-channel.basic_consume(queue='notificacoes1', on_message_callback=callback, auto_ack=True)
+channel.basic_consume(queue='notificacoes', on_message_callback=callback, auto_ack=True)
 
 if args.client == "A":
     print("Sou o cliente A")
     channel.basic_consume(queue='leilao_2', on_message_callback=callback, auto_ack=True)
-    channel.basic_consume(queue='notificacoes2', on_message_callback=callback, auto_ack=True)
 
 
 class Cliente:
@@ -122,13 +123,19 @@ tk.Label(root, text="Feed:", font=("Arial", 12)).grid(row=2, column=0, columnspa
 leiloes_listbox = tk.Listbox(root, height=10, font=("Arial", 12))
 leiloes_listbox.grid(row=3, column=0, columnspan=2, padx=10, pady=5, sticky='ew')
 
+feed_label = tk.Label(root, text="Leilões ativos: 0", font=("Arial", 10))
+feed_label.grid(row=4, column=0, columnspan=2, padx=10, pady=5, sticky='ew')
+
 def atualizar_lista_leiloes():
+    leiloes_ativos.sort(key=lambda x: int(x['id']))  # Ordenar por ID
     leiloes_listbox.delete(0, tk.END)
     for leilao in leiloes_ativos:
         leiloes_listbox.insert(tk.END, f"ID: {leilao['id']} - {leilao['descricao']} (Início: {leilao['inicio']})")
+    feed_label.config(text=f"Leilões ativos: {len(leiloes_ativos)}")
 
 def adicionar_notificacao(mensagem):
     leiloes_listbox.insert(tk.END, f"Notificação: {mensagem}")
+    # Não atualizar a contagem aqui, pois notificações não afetam a quantidade de leilões ativos
 
 def enviar():
     try:
@@ -139,7 +146,7 @@ def enviar():
     except Exception as e:
         messagebox.showerror("Erro", str(e))
 
-tk.Button(root, text="Enviar Lance", command=enviar, font=("Arial", 12)).grid(row=4, column=0, columnspan=2, padx=10, pady=10, sticky='ew')
+tk.Button(root, text="Enviar Lance", command=enviar, font=("Arial", 12)).grid(row=5, column=0, columnspan=2, padx=10, pady=10, sticky='ew')
 
 # Iniciar consumo em thread separada
 
