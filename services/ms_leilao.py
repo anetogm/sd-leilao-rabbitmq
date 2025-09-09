@@ -27,8 +27,12 @@ leiloes = [
 connection = pika.BlockingConnection(pika.ConnectionParameters('localhost'))
 channel = connection.channel()
 
-
 channel.exchange_declare(exchange='inicio', exchange_type='fanout')
+
+channel.queue_declare(queue='notificacoes1', durable=True)
+channel.queue_declare(queue='notificacoes2', durable=True)
+channel.queue_bind(exchange='inicio', queue='notificacoes1')
+channel.queue_bind(exchange='inicio', queue='notificacoes2')
 
 lock = threading.Lock()
 
@@ -61,6 +65,7 @@ def main():
 		t = threading.Thread(target=gerenciar_leilao, args=(leilao,))
 		t.start()
 		threads.append(t)
+		print(f'\n {leilao} \n\n\n\n' )
 	for t in threads:
 		t.join()
 

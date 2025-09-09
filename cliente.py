@@ -11,10 +11,6 @@ import time
 import tkinter as tk
 from tkinter import messagebox
 
-print("Certifique-se de executar os serviços na ordem: ms_leilao.py, ms_lance.py, ms_notificacao.py antes de executar o cliente.py")
-
-
-
 parser = argparse.ArgumentParser(description="Script de cliente")
 
 parser.add_argument("--client", help='Choose de client ID ("A" OR "B")')
@@ -48,17 +44,17 @@ def callback(ch, method, properties, body):
         root.after(0, lambda: adicionar_notificacao(mensagem))
         print(f"Notificação adicionada: {mensagem}")
     
-    root.after(0, lambda: messagebox.showinfo("Mensagem recebida:", mensagem))
-
-
 channel.exchange_declare(exchange='inicio', exchange_type='fanout')
 
 channel.basic_consume(queue='leilao_1', on_message_callback=callback, auto_ack=True)
-channel.basic_consume(queue='notificacoes', on_message_callback=callback, auto_ack=True)
+
+if args.client == "B":
+    channel.basic_consume(queue='notificacoes1', on_message_callback=callback, auto_ack=True)
 
 if args.client == "A":
     print("Sou o cliente A")
     channel.basic_consume(queue='leilao_2', on_message_callback=callback, auto_ack=True)
+    channel.basic_consume(queue='notificacoes2', on_message_callback=callback, auto_ack=True)
 
 
 class Cliente:
