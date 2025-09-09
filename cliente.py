@@ -1,13 +1,15 @@
-import pika
-import json
+import argparse
 import base64
-import os
 from Crypto.Signature import pkcs1_15
 from Crypto.Hash import SHA256
 from Crypto.PublicKey import RSA
+import json
+import os
+import pika
+import threading
 import tkinter as tk
 from tkinter import messagebox
-import argparse
+
 
 
 parser = argparse.ArgumentParser(description="Script de cliente")
@@ -41,17 +43,21 @@ def callback(ch, method, properties, body):
     
     root.after(0, lambda: messagebox.showinfo("Mensagem recebida:", mensagem))
 
+
 channel.exchange_declare(exchange='inicio', exchange_type='fanout')
-result = channel.queue_declare(queue='', exclusive=True)
-queue_name = result.method.queue
-channel.queue_bind(exchange='inicio', queue=queue_name)
+
+channel.queue_declare(queue='notificacoes1', durable=True)
+channel.queue_declare(queue='notificacoes2', durable=True)
+channel.queue_bind(exchange='inicio', queue='notificacoes1')
+channel.queue_bind(exchange='inicio', queue='notificacoes2')
 
 channel.basic_consume(queue='leilao_1', on_message_callback=callback, auto_ack=True)
-channel.basic_consume(queue=queue_name, on_message_callback=callback, auto_ack=True)
+channel.basic_consume(queue='notificacoes1', on_message_callback=callback, auto_ack=True)
 
-if args.client == "B":
-    print("Sou o cliente B")
+if args.client == "A":
+    print("Sou o cliente A")
     channel.basic_consume(queue='leilao_2', on_message_callback=callback, auto_ack=True)
+    channel.basic_consume(queue='notificacoes2', on_message_callback=callback, auto_ack=True)
 
 
 class Cliente:
@@ -136,7 +142,7 @@ def enviar():
 tk.Button(root, text="Enviar Lance", command=enviar, font=("Arial", 12)).grid(row=4, column=0, columnspan=2, padx=10, pady=10, sticky='ew')
 
 # Iniciar consumo em thread separada
-import threading
+
 def consumir():
     channel.start_consuming()
 
