@@ -13,7 +13,7 @@ from tkinter import messagebox
 
 parser = argparse.ArgumentParser(description="Script de cliente")
 
-parser.add_argument("--client", help='Choose de client ID ("A" OR "B")')
+parser.add_argument("--client", help='Choose de client ID ("A" OR "B")',default='A')
 args = parser.parse_args()
 
 connection = pika.BlockingConnection(pika.ConnectionParameters('localhost'))
@@ -45,7 +45,6 @@ def callback(ch, method, properties, body):
         print(f"Notificação adicionada: {mensagem}")
     
 channel.exchange_declare(exchange='inicio', exchange_type='fanout')
-
 channel.basic_consume(queue='leilao_1', on_message_callback=callback, auto_ack=True)
 
 if args.client == "B":
@@ -53,8 +52,8 @@ if args.client == "B":
 
 if args.client == "A":
     print("Sou o cliente A")
-    channel.basic_consume(queue='leilao_2', on_message_callback=callback, auto_ack=True)
     channel.basic_consume(queue='notificacoes2', on_message_callback=callback, auto_ack=True)
+    channel.basic_consume(queue='leilao_2', on_message_callback=callback, auto_ack=True)
 
 
 class Cliente:
@@ -133,22 +132,38 @@ def adicionar_notificacao(mensagem):
     leiloes_listbox.insert(tk.END, f"Notificação: {mensagem}")
     # Não atualizar a contagem aqui, pois notificações não afetam a quantidade de leilões ativos
 
+#flag para saber quando começar a consumir
+canais_consumo = set()
+
 def enviar():
     try:
         leilao_id = int(leilao_entry.get())
         valor = valor_entry.get()
+        if(args.client == "B" and leilao_id != 1):
+            messagebox.showerror("Erro", "Cliente B só pode participar do leilão 1")
+            return
         cliente.enviar_lance(leilao_id, valor)
         messagebox.showinfo("Sucesso", "Lance enviado!")
+        if False: #Isso pode vir a funcionar no futuro (porém ainda não)
+            #tratamento de consumo por desejo do cliente
+            if leilao_id in canais_consumo:
+                print("você já está inscrito nesse canal")
+            else:
+                channel.basic_consume(queue=f'leilao_{leilao_id}', on_message_callback=callback, auto_ack=True)
+                canais_consumo.add(leilao_id)
+                print(f"Inscrito no canal leilao_{leilao_id}")
+
     except Exception as e:
         messagebox.showerror("Erro", str(e))
 
-tk.Button(root, text="Enviar Lance", command=enviar, font=("Arial", 12)).grid(row=5, column=0, columnspan=2, padx=10, pady=10, sticky='ew')
 
 # Iniciar consumo em thread separada
+
 
 def consumir():
     channel.start_consuming()
 
 threading.Thread(target=consumir, daemon=True).start()
+tk.Button(root, text="Enviar Lance", command=enviar, font=("Arial", 12)).grid(row=5, column=0, columnspan=2, padx=10, pady=10, sticky='ew')
 
 root.mainloop()
