@@ -45,16 +45,29 @@ def callback(ch, method, properties, body):
         print(f"Notificação adicionada: {mensagem}")
     
 channel.exchange_declare(exchange='inicio', exchange_type='fanout')
-channel.basic_consume(queue='leilao_1', on_message_callback=callback, auto_ack=True)
+channel.exchange_declare(exchange='direct_leilao', exchange_type='direct')
 
+result = channel.queue_declare(queue='', exclusive=True)
+queue_name = result.method.queue
+
+interesse_leilao = set()
+
+#channel.basic_consume(queue='leilao_1', on_message_callback=callback, auto_ack=True)
+interesse_leilao.add(1)
 if args.client == "B":
     channel.basic_consume(queue='notificacoes1', on_message_callback=callback, auto_ack=True)
-
+        
 if args.client == "A":
     print("Sou o cliente A")
     channel.basic_consume(queue='notificacoes2', on_message_callback=callback, auto_ack=True)
-    channel.basic_consume(queue='leilao_2', on_message_callback=callback, auto_ack=True)
+    #channel.basic_consume(queue='leilao_2', on_message_callback=callback, auto_ack=True)
+    interesse_leilao.add(2)
+    
+    
+for i in interesse_leilao:
+        channel.queue_bind(exchange='direct_leilao', queue=queue_name, routing_key=str(i))
 
+channel.basic_consume(queue=queue_name, on_message_callback=callback, auto_ack=True)
 
 class Cliente:
     def __init__(self, nome, id_cliente):
