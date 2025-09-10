@@ -21,7 +21,7 @@ channel = connection.channel()
 
 # Lista de leilões ativos
 leiloes_ativos = []
-leiloes_ids = set()  # Para evitar duplicatas
+leiloes_ids = set()
 
 
 def callback(ch, method, properties, body):
