@@ -36,8 +36,8 @@ channel.queue_declare(queue='leilao_vencedor')
 channel.queue_declare(queue='lance_realizado')
 channel.queue_declare(queue='lance_validado')
 
-channel.queue_declare(queue='notificacoes1')
-channel.queue_declare(queue='notificacoes2')
+channel.queue_declare(queue='notificacoes1', durable=True)
+channel.queue_declare(queue='notificacoes2', durable=True)
 channel.queue_bind(exchange='inicio', queue='notificacoes1')
 channel.queue_bind(exchange='inicio', queue='notificacoes2')
 
