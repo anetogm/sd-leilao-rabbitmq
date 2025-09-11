@@ -9,7 +9,6 @@ import pika
 leiloes_ativos = {}
 lances_atuais = {}
 
-
 def callback_lance_realizado(ch, method, properties, body):
     print("Recebido em lance_realizado:", body)
     try:
@@ -68,7 +67,6 @@ channel.exchange_declare(exchange='inicio', exchange_type='fanout')
 result = channel.queue_declare(queue='', exclusive=True)
 queue_name = result.method.queue
 channel.queue_bind(exchange='inicio', queue=queue_name)
-
 
 channel.basic_consume(queue='lance_realizado', on_message_callback=callback_lance_realizado, auto_ack=True)
 channel.basic_consume(queue='leilao_finalizado', on_message_callback=callback_leilao_finalizado, auto_ack=True)

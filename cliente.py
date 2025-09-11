@@ -138,8 +138,6 @@ def atualizar_lista_leiloes():
 def adicionar_notificacao(mensagem):
     leiloes_listbox.insert(tk.END, f"Notificação: {mensagem}")
 
-canais_consumo = set()
-
 def enviar():
     try:
         leilao_id = int(leilao_entry.get())

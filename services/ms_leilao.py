@@ -28,9 +28,7 @@ connection = pika.BlockingConnection(pika.ConnectionParameters('localhost'))
 channel = connection.channel()
 
 channel.exchange_declare(exchange='inicio', exchange_type='fanout')
-
-channel.queue_declare(queue='leilao_1')
-channel.queue_declare(queue='leilao_2')
+	
 channel.queue_declare(queue='leilao_finalizado')
 channel.queue_declare(queue='leilao_vencedor')
 channel.queue_declare(queue='lance_realizado')
